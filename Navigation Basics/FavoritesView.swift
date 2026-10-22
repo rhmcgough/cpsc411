@@ -1,64 +1,168 @@
 import SwiftUI
 
+struct Movie: Identifiable {
+    let id = UUID()
+    let title: String
+    let genre: String
+    let imageName: String
+
+    // TODO:
+    // Add year, rating, director, and localVideoName.
+}
+
 struct FavoritesView: View {
 
-    @State private var showUnseenOnly = true
+    @State private var selectedMovie: Movie?
 
-    private let favoriteMovies = [
-        (title: "Avengers: Doomsday", isSeen: false),
-        (title: "Insidious: Into the Further", isSeen: true),
-        (title: "Resident Evil", isSeen: false),
-        (title: "Zootopia", isSeen: true),
-        (title: "Spider-Man: Brand New Day", isSeen: false)
+    // TODO:
+    // After adding the new Movie properties,
+    // update each movie below with:
+    // year, rating, director, and localVideoName.
+
+    private let movies = [
+        Movie(
+            title: "Avengers: Doomsday",
+            genre: "Action / Sci-Fi",
+            imageName: "avengers_doomsday"
+        ),
+        Movie(
+            title: "Minions",
+            genre: "Animation / Comedy",
+            imageName: "minions"
+        ),
+        Movie(
+            title: "Obsession",
+            genre: "Thriller / Drama",
+            imageName: "obsession"
+        ),
+        Movie(
+            title: "Resident Evil",
+            genre: "Horror / Action",
+            imageName: "resident_evil"
+        ),
+        Movie(
+            title: "Spider-Man: Brand New Day",
+            genre: "Action / Superhero",
+            imageName: "spiderman_brand_new_day"
+        ),
+        Movie(
+            title: "Zootopia 2",
+            genre: "Animation / Family",
+            imageName: "zootopia_2"
+        )
+    ]
+
+    private let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible())
     ]
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 60))
-                    .foregroundStyle(.red)
-                    .padding()
-                    .background(.red.opacity(0.1))
-                    .clipShape(Circle())
+        ZStack {
+            LinearGradient(
+                colors: [.blue, .orange],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .opacity(0.8)
+            .ignoresSafeArea()
 
-                Text("Favorite Movies")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Toggle("Unseen Only", isOn: $showUnseenOnly)
-                    .font(.headline)
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
-                    .padding(.horizontal, 24)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
 
-                List {
-                    ForEach(
-                        favoriteMovies.filter { movie in
-                            !showUnseenOnly || !movie.isSeen
-                        },
-                        id: \.title
-                    ) { movie in
-                        HStack {
-                            Image(systemName: movie.isSeen
-                                  ? "checkmark.circle.fill"
-                                  : "circle")
-                                .foregroundStyle(movie.isSeen ? .green : .gray)
+                    // Title, top left
+                    Text("Saved")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
 
-                            Text(movie.title)
+                    // Movie grid (always visible)
+                    VStack(alignment: .leading, spacing: 16) {
 
-                            Spacer()
+                        LazyVGrid(columns: columns, spacing: 16) {
+                            ForEach(movies) { movie in
+                                Button {
+                                    selectedMovie = movie
+                                } label: {
+                                    VStack(spacing: 8) {
+                                        Image(movie.imageName)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(height: 180)
+                                            .clipShape(
+                                                RoundedRectangle(cornerRadius: 10)
+                                            )
 
-                            Text(movie.isSeen ? "Seen" : "Unseen")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                        Text(movie.title)
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                            .foregroundStyle(.white)
+                                            .lineLimit(1)
+                                    }
+                                    .padding(8)
+                                    .background(.black.opacity(0.35))
+                                    .clipShape(
+                                        RoundedRectangle(cornerRadius: 14)
+                                    )
+                                }
+                            }
                         }
                     }
+                    .padding()
                 }
+                .padding(.vertical)
             }
-            .navigationTitle("Favorites Screen")
-            .navigationBarTitleDisplayMode(.inline)
         }
+        .sheet(item: $selectedMovie, content: { movie in
+            MovieDetailSheet(
+                movie: movie,
+                dismiss: {
+                    selectedMovie = nil
+                }
+            )
+        })
+    }
+}
+
+struct MovieDetailSheet: View {
+
+    let movie: Movie
+    let dismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+
+            Image(movie.imageName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 140, height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            Text(movie.title)
+                .font(.title2)
+                .fontWeight(.bold)
+
+            Text(movie.genre)
+                .foregroundStyle(.secondary)
+
+            // TODO:
+            // Display year, rating, and director here.
+
+            // TODO:
+            // Add local video playback here.
+
+            Button("Close") {
+                dismiss()
+            }
+            .font(.headline)
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(.blue)
+            .foregroundStyle(.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding()
     }
 }
 
