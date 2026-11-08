@@ -1,10 +1,10 @@
-
 import SwiftUI
 
 struct SearchView: View {
 
     @State private var searchText = ""
     @State private var selectedCategory = "All"
+    @State private var meals: [TheMealDB.Meal] = []
 
     private let backgroundColor = Color(
         red: 0.98,
@@ -25,26 +25,17 @@ struct SearchView: View {
         "Dinner",
     ]
     
-    private let recipes = MockRecipeData.recipes
-
     private let columns = [
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14)
     ]
 
-    private var filteredRecipes: [SearchRecipe] {
+    private var filteredRecipes: [TheMealDB.Meal] {
 
-        recipes.filter { recipe in
+        meals.filter { recipe in
 
-            let matchesSearch =
-                searchText.isEmpty ||
-                recipe.name.localizedCaseInsensitiveContains(searchText)
-
-            let matchesCategory =
-                selectedCategory == "All" ||
-                recipe.category == selectedCategory
-
-            return matchesSearch && matchesCategory
+            selectedCategory == "All" ||
+            recipe.strCategory == selectedCategory
         }
     }
 
@@ -233,22 +224,25 @@ struct SearchView: View {
                 .padding(20)
             }
             .background(backgroundColor)
-            .toolbar(.hidden, for: .navigationBar)
+            .task(id: searchText) {
+                guard !Task.isCancelled else { return }
+                let results = try? await TheMealDB.shared.searchMeals(query: searchText)
+                if !Task.isCancelled { meals = results ?? [] }
+            }
+            
         }
     }
 
     // MARK: Recipe Card
 
     private func recipeCard(
-        _ recipe: SearchRecipe
+        _ recipe: TheMealDB.Meal
     ) -> some View {
 
         VStack(alignment: .leading, spacing: 8) {
 
             AsyncImage(
-                url: URL(
-                    string: "https://images.unsplash.com/\(recipe.image)?w=500"
-                )
+                url: URL(string: recipe.strMealThumb ?? "")
             ) { image in
 
                 image
@@ -269,18 +263,14 @@ struct SearchView: View {
                 RoundedRectangle(cornerRadius: 15)
             )
 
-            Text(recipe.name)
+            Text(recipe.strMeal)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(2)
 
             HStack {
 
-                Text(recipe.category)
-
-                Spacer()
-
-                Text(recipe.time)
+                Text(recipe.strCategory ?? "")
             }
             .font(.caption)
             .foregroundStyle(.secondary)

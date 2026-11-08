@@ -1,12 +1,10 @@
-
 import SwiftUI
 
 struct HomePageView: View {
 
     @State private var searchText = ""
     @State private var selectedCategory = "All"
-
-    private let recipes = MockRecipeData.recipes
+    @State private var meals: [TheMealDB.Meal] = []
 
     private let backgroundColor = Color(
         red: 0.98,
@@ -29,17 +27,17 @@ struct HomePageView: View {
         GridItem(.flexible(), spacing: 14)
     ]
 
-    private var filteredRecipes: [SearchRecipe] {
+    private var filteredRecipes: [TheMealDB.Meal] {
 
-        recipes.filter { recipe in
+        meals.filter { recipe in
 
             let matchesCategory =
                 selectedCategory == "All" ||
-                recipe.category == selectedCategory
+                recipe.strCategory == selectedCategory
 
             let matchesSearch =
                 searchText.isEmpty ||
-                recipe.name.localizedCaseInsensitiveContains(searchText)
+                recipe.strMeal.localizedCaseInsensitiveContains(searchText)
 
             return matchesCategory && matchesSearch
         }
@@ -67,7 +65,7 @@ struct HomePageView: View {
 
                     // MARK: - Featured Recipe
 
-                    if let featured = recipes.first {
+                    if let featured = meals.first {
 
                         VStack(alignment: .leading, spacing: 14) {
 
@@ -78,9 +76,7 @@ struct HomePageView: View {
                             ZStack(alignment: .bottomLeading) {
 
                                 AsyncImage(
-                                    url: URL(
-                                        string: "https://images.unsplash.com/\(featured.image)?w=900"
-                                    )
+                                    url: URL(string: featured.strMealThumb ?? "")
                                 ) { image in
 
                                     image
@@ -115,11 +111,11 @@ struct HomePageView: View {
                                         .fontWeight(.bold)
                                         .tracking(1.5)
 
-                                    Text(featured.name)
+                                    Text(featured.strMeal)
                                         .font(.title2)
                                         .fontWeight(.bold)
 
-                                    Text("\(featured.time) • \(featured.category)")
+                                    Text(featured.strCategory ?? "")
                                         .font(.caption)
                                 }
                                 .foregroundStyle(.white)
@@ -204,9 +200,7 @@ struct HomePageView: View {
                                 VStack(alignment: .leading, spacing: 8) {
 
                                     AsyncImage(
-                                        url: URL(
-                                            string: "https://images.unsplash.com/\(recipe.image)?w=500"
-                                        )
+                                        url: URL(string: recipe.strMealThumb ?? "")
                                     ) { image in
 
                                         image
@@ -227,17 +221,13 @@ struct HomePageView: View {
                                         RoundedRectangle(cornerRadius: 15)
                                     )
 
-                                    Text(recipe.name)
+                                    Text(recipe.strMeal)
                                         .font(.system(size: 15, weight: .semibold))
                                         .lineLimit(2)
 
                                     HStack {
 
-                                        Text(recipe.category)
-
-                                        Spacer()
-
-                                        Text(recipe.time)
+                                        Text(recipe.strCategory ?? "")
                                     }
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -254,6 +244,7 @@ struct HomePageView: View {
                 .padding(20)
             }
             .background(backgroundColor)
+            .task { meals = (try? await TheMealDB.shared.searchMeals(query: "Thai")) ?? [] }
             .toolbar(.hidden, for: .navigationBar)
         }
     }
