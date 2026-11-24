@@ -6,6 +6,14 @@ struct HomePageView: View {
     @State private var selectedCategory = "All"
     @State private var meals: [TheMealDB.Meal] = []
 
+    @AppStorage("currentUsername") private var currentUsername = ""
+    @AppStorage("isLoggedIn") private var isLoggedIn = false
+    @State private var favoriteRecipes: [TheMealDB.Meal] = []
+
+    private var favoritesKey: String {
+        "favoriteRecipes_\(currentUsername)"
+    }
+
     private let backgroundColor = Color(
         red: 0.98,
         green: 0.96,
@@ -220,6 +228,19 @@ struct HomePageView: View {
                                     .clipShape(
                                         RoundedRectangle(cornerRadius: 15)
                                     )
+                                    .overlay(alignment: .topTrailing) {
+                                        if isLoggedIn {
+                                            Button {
+                                                toggleFavorite(recipe)
+                                            } label: {
+                                                Image(systemName: isFavorite(recipe) ? "heart.fill" : "heart")
+                                                    .foregroundStyle(accentColor)
+                                                    .padding(8)
+                                                    .background(.white, in: Circle())
+                                            }
+                                            .padding(6)
+                                        }
+                                    }
 
                                     Text(recipe.strMeal)
                                         .font(.system(size: 15, weight: .semibold))
@@ -246,7 +267,40 @@ struct HomePageView: View {
             .background(backgroundColor)
             .task { meals = (try? await TheMealDB.shared.searchMeals(query: "Thai")) ?? [] }
             .toolbar(.hidden, for: .navigationBar)
+            .onAppear { loadFavorites() }
         }
+    }
+
+    // MARK: - Favorites
+
+    private func loadFavorites() {
+        guard isLoggedIn, !currentUsername.isEmpty,
+              let data = UserDefaults.standard.data(forKey: favoritesKey),
+              let decoded = try? JSONDecoder().decode([TheMealDB.Meal].self, from: data) else {
+            favoriteRecipes = []
+            return
+        }
+        favoriteRecipes = decoded
+    }
+
+    private func saveFavorites() {
+        guard isLoggedIn, !currentUsername.isEmpty else { return }
+        if let data = try? JSONEncoder().encode(favoriteRecipes) {
+            UserDefaults.standard.set(data, forKey: favoritesKey)
+        }
+    }
+
+    private func isFavorite(_ recipe: TheMealDB.Meal) -> Bool {
+        favoriteRecipes.contains { $0.id == recipe.id }
+    }
+
+    private func toggleFavorite(_ recipe: TheMealDB.Meal) {
+        if isFavorite(recipe) {
+            favoriteRecipes.removeAll { $0.id == recipe.id }
+        } else {
+            favoriteRecipes.append(recipe)
+        }
+        saveFavorites()
     }
 }
 

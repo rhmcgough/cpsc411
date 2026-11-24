@@ -13,7 +13,7 @@ class TheMealDB {
     private init() {}
  
     // MARK: - Models
-    struct Meal: Decodable, Identifiable {
+    struct Meal: Codable, Identifiable {
         let idMeal: String
         let strMeal: String
         let strCategory: String?

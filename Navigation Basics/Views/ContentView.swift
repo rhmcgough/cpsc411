@@ -31,7 +31,7 @@ struct ContentView: View {
             
             
             
-            SettingsView()
+            LoginView()
                  .tabItem {
                      Label("Settings", systemImage: "gearshape.fill")
                  }

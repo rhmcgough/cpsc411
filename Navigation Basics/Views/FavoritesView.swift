@@ -1,168 +1,177 @@
 import SwiftUI
 
-struct Movie: Identifiable {
-    let id = UUID()
-    let title: String
-    let genre: String
-    let imageName: String
-
-    // TODO:
-    // Add year, rating, director, and localVideoName.
-}
-
 struct FavoritesView: View {
 
-    @State private var selectedMovie: Movie?
+    @AppStorage("currentUsername")
+    private var currentUsername = ""
 
-    // TODO:
-    // After adding the new Movie properties,
-    // update each movie below with:
-    // year, rating, director, and localVideoName.
+    @AppStorage("isLoggedIn")
+    private var isLoggedIn = false
 
-    private let movies = [
-        Movie(
-            title: "Avengers: Doomsday",
-            genre: "Action / Sci-Fi",
-            imageName: "avengers_doomsday"
-        ),
-        Movie(
-            title: "Minions",
-            genre: "Animation / Comedy",
-            imageName: "minions"
-        ),
-        Movie(
-            title: "Obsession",
-            genre: "Thriller / Drama",
-            imageName: "obsession"
-        ),
-        Movie(
-            title: "Resident Evil",
-            genre: "Horror / Action",
-            imageName: "resident_evil"
-        ),
-        Movie(
-            title: "Spider-Man: Brand New Day",
-            genre: "Action / Superhero",
-            imageName: "spiderman_brand_new_day"
-        ),
-        Movie(
-            title: "Zootopia 2",
-            genre: "Animation / Family",
-            imageName: "zootopia_2"
-        )
-    ]
+    @State private var favoriteRecipes: [TheMealDB.Meal] = []
 
-    private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
+    private var favoritesKey: String {
+        "favoriteRecipes_\(currentUsername)"
+    }
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [.blue, .orange],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .opacity(0.8)
-            .ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+        NavigationStack {
 
-                    // Title, top left
-                    Text("Saved")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
+            VStack {
 
-                    // Movie grid (always visible)
-                    VStack(alignment: .leading, spacing: 16) {
+                if !isLoggedIn {
 
-                        LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(movies) { movie in
-                                Button {
-                                    selectedMovie = movie
-                                } label: {
-                                    VStack(spacing: 8) {
-                                        Image(movie.imageName)
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(height: 180)
-                                            .clipShape(
-                                                RoundedRectangle(cornerRadius: 10)
-                                            )
+                    ContentUnavailableView(
+                        "Please Log In",
+                        systemImage: "lock.fill",
+                        description: Text(
+                            "Log in to view your saved recipes."
+                        )
+                    )
 
-                                        Text(movie.title)
-                                            .font(.caption)
-                                            .fontWeight(.semibold)
-                                            .foregroundStyle(.white)
-                                            .lineLimit(1)
-                                    }
-                                    .padding(8)
-                                    .background(.black.opacity(0.35))
-                                    .clipShape(
-                                        RoundedRectangle(cornerRadius: 14)
-                                    )
+                } else if favoriteRecipes.isEmpty {
+
+                    ContentUnavailableView(
+                        "No Favorite Recipes",
+                        systemImage: "heart.slash",
+                        description: Text(
+                            "Add recipes to your favorites by pressing the heart button"
+                        )
+                    )
+
+                } else {
+
+                    List {
+
+                        ForEach(favoriteRecipes) { recipe in
+
+                            HStack(spacing: 12) {
+
+                                AsyncImage(
+                                    url: URL(string: recipe.strMealThumb ?? "")
+                                ) { image in
+
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+
+                                } placeholder: {
+
+                                    ProgressView()
                                 }
+                                .frame(width: 60, height: 60)
+                                .clipShape(
+                                    RoundedRectangle(cornerRadius: 8)
+                                )
+
+                                VStack(
+                                    alignment: .leading,
+                                    spacing: 4
+                                ) {
+
+                                    Text(recipe.strMeal)
+                                        .font(.headline)
+
+                                    Text(recipe.strCategory ?? "")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+
+                                Spacer()
+
+                                Button {
+                                    removeFavorite(recipe)
+                                } label: {
+
+                                    Image(systemName: "trash")
+                                        .foregroundStyle(.red)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
+                        .onDelete(perform: deleteFavorites)
                     }
-                    .padding()
                 }
-                .padding(.vertical)
             }
-        }
-        .sheet(item: $selectedMovie, content: { movie in
-            MovieDetailSheet(
-                movie: movie,
-                dismiss: {
-                    selectedMovie = nil
-                }
+            .navigationTitle(
+                isLoggedIn
+                ? "\(currentUsername)'s Favorites"
+                : "Favorites"
             )
-        })
-    }
-}
+            .navigationBarTitleDisplayMode(.inline)
 
-struct MovieDetailSheet: View {
-
-    let movie: Movie
-    let dismiss: () -> Void
-
-    var body: some View {
-        VStack(spacing: 20) {
-
-            Image(movie.imageName)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 140, height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            Text(movie.title)
-                .font(.title2)
-                .fontWeight(.bold)
-
-            Text(movie.genre)
-                .foregroundStyle(.secondary)
-
-            // TODO:
-            // Display year, rating, and director here.
-
-            // TODO:
-            // Add local video playback here.
-
-            Button("Close") {
-                dismiss()
+            .onAppear {
+                loadFavorites()
             }
-            .font(.headline)
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(.blue)
-            .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+            .onChange(of: currentUsername) {
+                loadFavorites()
+            }
+
+            .onChange(of: isLoggedIn) {
+                loadFavorites()
+            }
         }
-        .padding()
+    }
+
+    // MARK: Load Favorites
+
+    private func loadFavorites() {
+
+        guard isLoggedIn,
+              !currentUsername.isEmpty,
+              let data = UserDefaults.standard.data(
+                forKey: favoritesKey
+              ),
+              let decoded = try? JSONDecoder().decode(
+                [TheMealDB.Meal].self,
+                from: data
+              )
+        else {
+            favoriteRecipes = []
+            return
+        }
+
+        favoriteRecipes = decoded
+    }
+
+    // MARK: Remove Favorite
+
+    private func removeFavorite(_ recipe: TheMealDB.Meal) {
+
+        favoriteRecipes.removeAll {
+            $0.id == recipe.id
+        }
+
+        saveFavorites()
+    }
+
+    private func deleteFavorites(at offsets: IndexSet) {
+
+        favoriteRecipes.remove(atOffsets: offsets)
+        saveFavorites()
+    }
+
+    // MARK: Save Favorites
+
+    private func saveFavorites() {
+
+        guard isLoggedIn,
+              !currentUsername.isEmpty
+        else {
+            return
+        }
+
+        if let data = try? JSONEncoder().encode(
+            favoriteRecipes
+        ) {
+
+            UserDefaults.standard.set(
+                data,
+                forKey: favoritesKey
+            )
+        }
     }
 }
 
