@@ -5,6 +5,7 @@ struct HomePageView: View {
     @State private var searchText = ""
     @State private var selectedCategory = "All"
     @State private var meals: [TheMealDB.Meal] = []
+    @State private var selectedRecipe: TheMealDB.Meal?
 
     @AppStorage("currentUsername") private var currentUsername = ""
     @AppStorage("isLoggedIn") private var isLoggedIn = false
@@ -14,11 +15,7 @@ struct HomePageView: View {
         "favoriteRecipes_\(currentUsername)"
     }
 
-    private let backgroundColor = Color(
-        red: 0.98,
-        green: 0.96,
-        blue: 0.92
-    )
+    private let backgroundColor = Color.appBackground
 
     private let accentColor = Color(
         red: 0.78,
@@ -26,9 +23,7 @@ struct HomePageView: View {
         blue: 0.23
     )
 
-    private let categories = [
-        "All", "Breakfast", "Lunch", "Dinner"
-    ]
+    private let categories = [ "All", "Breakfast", "Chicken", "Seafood", "Dessert", "Vegetarian" ]
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -132,6 +127,7 @@ struct HomePageView: View {
                             .clipShape(
                                 RoundedRectangle(cornerRadius: 20)
                             )
+                            .onTapGesture { selectedRecipe = featured }
                         }
                     }
 
@@ -166,12 +162,12 @@ struct HomePageView: View {
                                             .foregroundStyle(
                                                 selectedCategory == category
                                                 ? .white
-                                                : Color.black.opacity(0.7)
+                                                : Color.primary.opacity(0.7)
                                             )
                                             .background(
                                                 selectedCategory == category
                                                 ? accentColor
-                                                : .white
+                                                : Color.appSecondaryBackground
                                             )
                                             .clipShape(Capsule())
                                     }
@@ -254,10 +250,12 @@ struct HomePageView: View {
                                     .foregroundStyle(.secondary)
                                 }
                                 .padding(10)
-                                .background(.white)
+                                .background(Color.appSecondaryBackground)
                                 .clipShape(
                                     RoundedRectangle(cornerRadius: 18)
                                 )
+                                .contentShape(RoundedRectangle(cornerRadius: 18))
+                                .onTapGesture { selectedRecipe = recipe }
                             }
                         }
                     }
@@ -265,9 +263,18 @@ struct HomePageView: View {
                 .padding(20)
             }
             .background(backgroundColor)
-            .task { meals = (try? await TheMealDB.shared.searchMeals(query: "Thai")) ?? [] }
+            .task(id: selectedCategory) {
+                if selectedCategory == "All" {
+                    meals = (try? await TheMealDB.shared.searchMeals(query: "Thai")) ?? []
+                } else {
+                    meals = (try? await TheMealDB.shared.filterMeals(category: selectedCategory)) ?? []
+                }
+            }
             .toolbar(.hidden, for: .navigationBar)
             .onAppear { loadFavorites() }
+            .sheet(item: $selectedRecipe) { recipe in
+                RecipeDetailSheet(recipe: recipe)
+            }
         }
     }
 

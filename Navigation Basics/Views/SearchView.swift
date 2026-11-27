@@ -5,12 +5,9 @@ struct SearchView: View {
     @State private var searchText = ""
     @State private var selectedCategory = "All"
     @State private var meals: [TheMealDB.Meal] = []
+    @State private var selectedRecipe: TheMealDB.Meal?
 
-    private let backgroundColor = Color(
-        red: 0.98,
-        green: 0.96,
-        blue: 0.92
-    )
+    private let backgroundColor = Color.appBackground
 
     private let accentColor = Color(
         red: 0.78,
@@ -21,8 +18,10 @@ struct SearchView: View {
     private let categories = [
         "All",
         "Breakfast",
-        "Lunch",
-        "Dinner",
+        "Chicken",
+        "Seafood",
+        "Dessert",
+        "Vegetarian",
     ]
     
     private let columns = [
@@ -34,8 +33,10 @@ struct SearchView: View {
 
         meals.filter { recipe in
 
+            // search.php already matched the text; filter.php results still need it.
             selectedCategory == "All" ||
-            recipe.strCategory == selectedCategory
+            searchText.isEmpty ||
+            recipe.strMeal.localizedCaseInsensitiveContains(searchText)
         }
     }
 
@@ -85,7 +86,7 @@ struct SearchView: View {
                         }
                     }
                     .padding(16)
-                    .background(.white)
+                    .background(Color.appSecondaryBackground)
                     .clipShape(
                         RoundedRectangle(cornerRadius: 16)
                     )
@@ -165,7 +166,7 @@ struct SearchView: View {
                                             .background(
                                                 selectedCategory == category
                                                 ? accentColor
-                                                : .white
+                                                : Color.appSecondaryBackground
                                             )
                                             .clipShape(Capsule())
                                     }
@@ -216,6 +217,8 @@ struct SearchView: View {
                                 ForEach(filteredRecipes) { recipe in
 
                                     recipeCard(recipe)
+                                        .contentShape(RoundedRectangle(cornerRadius: 18))
+                                        .onTapGesture { selectedRecipe = recipe }
                                 }
                             }
                         }
@@ -224,9 +227,14 @@ struct SearchView: View {
                 .padding(20)
             }
             .background(backgroundColor)
-            .task(id: searchText) {
+            .sheet(item: $selectedRecipe) { recipe in
+                RecipeDetailSheet(recipe: recipe)
+            }
+            .task(id: [searchText, selectedCategory]) {
                 guard !Task.isCancelled else { return }
-                let results = try? await TheMealDB.shared.searchMeals(query: searchText)
+                let results = selectedCategory == "All"
+                    ? try? await TheMealDB.shared.searchMeals(query: searchText)
+                    : try? await TheMealDB.shared.filterMeals(category: selectedCategory)
                 if !Task.isCancelled { meals = results ?? [] }
             }
             
@@ -276,7 +284,7 @@ struct SearchView: View {
             .foregroundStyle(.secondary)
         }
         .padding(10)
-        .background(.white)
+        .background(Color.appSecondaryBackground)
         .clipShape(
             RoundedRectangle(cornerRadius: 18)
         )

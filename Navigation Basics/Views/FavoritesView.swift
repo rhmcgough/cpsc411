@@ -89,11 +89,15 @@ struct FavoritesView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
+                            .listRowBackground(Color.appSecondaryBackground)
                         }
                         .onDelete(perform: deleteFavorites)
                     }
+                    .scrollContentBackground(.hidden)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.appBackground)
             .navigationTitle(
                 isLoggedIn
                 ? "\(currentUsername)'s Favorites"

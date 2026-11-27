@@ -33,7 +33,7 @@ struct CreateView: View {
                         .foregroundStyle(.blue)
                         .padding()
 
-                    
+
 
                     Text("California State University, Fullerton")
                         .font(.subheadline)
@@ -63,6 +63,8 @@ struct CreateView: View {
 
                 Spacer()
             }
+            .frame(maxWidth: .infinity)
+            .background(Color.appBackground)
             .navigationTitle("About Us")
         }
     }
@@ -71,4 +73,3 @@ struct CreateView: View {
 #Preview {
     CreateView()
 }
-

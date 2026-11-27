@@ -46,6 +46,7 @@ struct LoginView: View {
                         Text("Logged in as \(currentUsername)")
                         Button("Log Out", role: .destructive, action: logout)
                     }
+                    .listRowBackground(Color.appSecondaryBackground)
 
                 } else {
 
@@ -55,18 +56,23 @@ struct LoginView: View {
                             .autocorrectionDisabled()
                         SecureField("Password", text: $password)
                     }
+                    .listRowBackground(Color.appSecondaryBackground)
 
                     Section {
                         Button("Log In", action: login)
                         Button("Create Account", action: register)
                     }
+                    .listRowBackground(Color.appSecondaryBackground)
 
                     if !message.isEmpty {
                         Text(message)
                             .foregroundStyle(.red)
+                            .listRowBackground(Color.appSecondaryBackground)
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.appBackground)
             .navigationTitle("Account")
         }
     }

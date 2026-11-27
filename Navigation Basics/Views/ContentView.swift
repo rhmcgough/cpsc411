@@ -25,7 +25,7 @@ struct ContentView: View {
             // 2. Favorites Page View (Instructor Provided)
             FavoritesView()
                 .tabItem {
-                    Label("Saved", systemImage: "bookmark.fill")
+                    Label("Favorites", systemImage: "heart.fill")
                 }
 
             
